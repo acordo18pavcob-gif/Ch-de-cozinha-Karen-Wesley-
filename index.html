@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>💗 Chá de Cozinha Karen & Wesley 💗</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://esm.sh/@supabase/supabase-js@2.45.4"></script>
+<style>
+:root { --brand: #ff5fa2; }
+html { font-family: "Poppins", system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif; }
+.card { border-radius: 1rem; box-shadow: 0 10px 25px rgba(0,0,0,.08); }
+.btn { border-radius: 9999px; padding: .65rem 1rem; font-weight: 600; cursor: pointer; }
+.btn-primary { background: var(--brand); color: white; }
+.btn-primary:hover { filter: brightness(.95); }
+.chip { border-radius: 9999px; font-size: .75rem; padding: .25rem .6rem; background: #f1f5f9; }
+</style>
+</head>
+<body class="bg-gradient-to-b from-rose-50 to-white min-h-screen">
+
+<header class="max-w-5xl mx-auto px-4 pt-10 pb-6 text-center">
+  <div class="inline-flex items-center gap-2 px-4 py-2 bg-white/70 backdrop-blur card">
+    <span class="chip">Evento</span>
+    <span class="text-sm">Chá de cozinha Karen & Wesley</span>
+  </div>
+  <h1 class="text-3xl md:text-5xl font-bold mt-4">💗 Chá de Cozinha <span class="text-[var(--brand)]">Karen & Wesley</span> 💗</h1>
+  <p class="text-slate-600 mt-3 max-w-2xl mx-auto">Escolha um presente abaixo ou sugira um novo. Todos conseguem ver em tempo real o que já foi escolhido. 🫶</p>
+</header>
+
+<main class="max-w-6xl mx-auto px-4 pb-16">
+  <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 mb-6">
+    <input id="search" type="search" placeholder="Buscar itens…" class="w-full md:w-80 bg-white card px-4 py-3 outline-none">
+    <div class="flex items-center gap-2">
+      <span class="chip" id="totalCount">0 itens</span>
+      <span class="chip" id="reservedCount">0 reservados</span>
+      <button id="refreshBtn" class="btn">Atualizar</button>
+    </div>
+  </div>
+
+  <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+
+  <div class="max-w-xl mx-auto mt-10 bg-white p-6 card">
+    <h2 class="text-xl font-semibold mb-4">Sugira um presente</h2>
+    <div class="grid gap-3">
+      <input id="suggestTitle" placeholder="Nome do presente" class="w-full bg-slate-50 px-3 py-2 rounded-xl outline-none">
+      <input id="suggestLink" placeholder="Link da loja (opcional)" class="w-full bg-slate-50 px-3 py-2 rounded-xl outline-none">
+      <input id="suggestImage" placeholder="Link da imagem (opcional)" class="w-full bg-slate-50 px-3 py-2 rounded-xl outline-none">
+      <button id="submitSuggestion" class="btn btn-primary">Enviar sugestão</button>
+    </div>
+  </div>
+</main>
+
+<footer class="text-center text-sm text-slate-500 mt-12">
+  Feito com 💗 | Atualizações em tempo real via Supabase
+</footer>
+
+<script>
+// ======== COLE SUAS CHAVES DO SUPABASE AQUI ========
+const SUPABASE_URL = "https://abcd1234.supabase.co"; // coloque aqui a URL do seu projeto
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."; // coloque aqui a anon key
+const { createClient } = window.Supabase;
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+
+// ======== ELEMENTOS ========
+const grid = document.getElementById('grid');
+const search = document.getElementById('search');
+const totalCount = document.getElementById('totalCount');
+const reservedCount = document.getElementById('reservedCount');
+const refreshBtn = document.getElementById('refreshBtn');
+
+let gifts = [];
+
+// ======== FUNÇÃO PARA PEGAR PRESENTES ========
+async function fetchGifts() {
+  const { data } = await supabase.from('gifts').select('*').order('created_at', { ascending: true });
+  gifts = data || [];
+  render(gifts);
+}
+
+// ======== FUNÇÃO PARA CRIAR CARTÕES ========
+function cardFromGift(gift) {
+  const card = document.createElement('div');
+  card.className = 'card bg-white overflow-hidden flex flex-col';
+
+  const img = document.createElement('img');
+  img.src = gift.image_url || 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1200&q=80&auto=format&fit=crop';
+  img.className = 'w-full h-48 object-cover';
+
+  const title = document.createElement('h3');
+  title.textContent = gift.title;
+  title.className = 'font-semibold p-3';
+
+  const chip = document.createElement('span');
+  chip.className = 'chip p-3';
+  chip.textContent = gift.reserved_by ? `Reservado por ${gift.reserved_by}` : 'Disponível';
+
+  const btn = document.createElement('button');
+  btn.textContent = gift.reserved_by ? 'Indisponível' : 'Reservar';
+  btn.className = 'btn btn-primary m-3';
+  btn.disabled = !!gift.reserved_by;
+  if(!gift.reserved_by) btn.addEventListener('click', () => reserveGift(gift));
+
+  card.appendChild(img);
+  card.appendChild(title);
+  card.appendChild(chip);
+  card.appendChild(btn);
+  return card;
+}
+
+// ======== FUNÇÃO DE RENDER ========
+function render(list) {
+  grid.innerHTML = '';
+  list.forEach(g => grid.appendChild(cardFromGift(g)));
+  totalCount.textContent = `${gifts.length} itens`;
+  reservedCount.textContent = `${gifts.filter(g => g.reserved_by).length} reservados`;
+}
+
+// ======== EVENTOS ========
+refreshBtn.addEventListener('click', fetchGifts);
+search.addEventListener('input', () => render(gifts.filter(g => (g.title + ' ' + (g.description||'')).toLowerCase().includes(search.value.toLowerCase()))));
+
+// ======== FUNÇÃO PARA RESERVAR ========
+async function reserveGift(gift) {
+  const name = prompt('Digite seu nome para reservar este presente:');
+  if(!name) return;
+  await supabase.from('gifts')
+    .update({reserved_by: name, reserved_at: new Date().toISOString()})
+    .eq('id', gift.id)
+    .is('reserved_by', null);
+  fetchGifts();
+}
+
+// ======== SUGESTÕES DE PRESENTE ========
+const suggestTitle = document.getElementById('suggestTitle');
+const suggestLink = document.getElementById('suggestLink');
+const suggestImage = document.getElementById('suggestImage');
+const submitSuggestion = document.getElementById('submitSuggestion');
+
+submitSuggestion.addEventListener('click', async () => {
+  const title = suggestTitle.value.trim();
+  if(!title) return alert('Digite o nome do presente');
+  await supabase.from('gifts')
+    .insert([{ title, store_url: suggestLink.value.trim() || null, image_url: suggestImage.value.trim() || null }]);
+  suggestTitle.value = '';
+  suggestLink.value = '';
+  suggestImage.value = '';
+  fetchGifts();
+});
+
+// ======== INICIALIZAÇÃO ========
+fetchGifts();
+</script>
+
+</body>
+</html>
