@@ -83,7 +83,7 @@
     const ADMIN_EMAIL = "karen_garcia1999@outlook.com";
 
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
     import { getDatabase, ref, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
     const app = initializeApp(firebaseConfig);
@@ -106,8 +106,6 @@
 
     let currentUser = null;
     let isAdmin = false;
-
-    signInAnonymously(auth).catch(console.error);
 
     onAuthStateChanged(auth, (user) => {
       currentUser = user;
@@ -169,7 +167,6 @@
 
         const actions = document.createElement('div'); actions.className='actions';
 
-        // Botão excluir do próprio convidado
         if(currentUser && currentUser.uid === item.owner){
           const delBtn = document.createElement('button');
           delBtn.className='ghost';
@@ -178,9 +175,7 @@
           actions.appendChild(delBtn);
         }
 
-        // Botões admin: editar e excluir
         if(isAdmin){
-          // Editar
           const editBtn = document.createElement('button');
           editBtn.className='ghost';
           editBtn.textContent='Editar (admin)';
@@ -193,8 +188,17 @@
           };
           actions.appendChild(editBtn);
 
-          // Excluir
           const delBtn = document.createElement('button');
           delBtn.className='ghost';
           delBtn.textContent='Excluir (admin)';
-          delBtn.onclick = async()=>{ try { await remove(ref(db,'presentes/'+id));
+          delBtn.onclick = async()=>{ try { await remove(ref(db,'presentes/'+id)); } catch(e){console.error(e);} };
+          actions.appendChild(delBtn);
+        }
+
+        li.appendChild(actions);
+        listEl.appendChild(li);
+      }
+    });
+  </script>
+</body>
+</html>
