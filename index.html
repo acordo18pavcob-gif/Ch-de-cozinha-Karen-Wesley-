@@ -83,8 +83,8 @@
     const ADMIN_EMAIL = "karen_garcia1999@outlook.com";
 
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import { getDatabase, ref, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
@@ -106,6 +106,9 @@
 
     let currentUser = null;
     let isAdmin = false;
+
+    // Login anônimo automático para convidados
+    signInAnonymously(auth).catch(console.error);
 
     onAuthStateChanged(auth, (user) => {
       currentUser = user;
@@ -144,16 +147,19 @@
       } catch(e){ alert('Falha no login: '+(e?.message||e)); }
     });
 
-    adminLogout.addEventListener('click', async () => { try { await signOut(auth); } catch(e){ alert('Erro ao sair'); } });
+    adminLogout.addEventListener('click', async () => { try { await signOut(auth); signInAnonymously(auth); } catch(e){ alert('Erro ao sair'); } });
 
     addBtn.addEventListener('click', async () => {
       const text = giftInput.value.trim();
       if (!text) return alert('Digite o presente.');
       if (!currentUser) return alert('Conectando... tente novamente.');
-      try { await push(ref(db,'presentes'), { text, owner: currentUser.uid, createdAt: Date.now() }); giftInput.value=''; }
-      catch(e){ alert('Não foi possível adicionar.'); console.error(e); }
+      try {
+        await push(ref(db,'presentes'), { text, owner: currentUser.uid, createdAt: Date.now() });
+        giftInput.value='';
+      } catch(e){ alert('Não foi possível adicionar.'); console.error(e); }
     });
 
+    // Lista de presentes em tempo real
     onValue(ref(db,'presentes'), (snap)=>{
       const data = snap.val()||{};
       const entries = Object.entries(data).sort((a,b)=> (a[1].createdAt||0)-(b[1].createdAt||0));
@@ -167,6 +173,7 @@
 
         const actions = document.createElement('div'); actions.className='actions';
 
+        // Convidado pode excluir apenas o próprio presente
         if(currentUser && currentUser.uid === item.owner){
           const delBtn = document.createElement('button');
           delBtn.className='ghost';
@@ -175,6 +182,7 @@
           actions.appendChild(delBtn);
         }
 
+        // Admin pode editar e excluir
         if(isAdmin){
           const editBtn = document.createElement('button');
           editBtn.className='ghost';
@@ -182,17 +190,16 @@
           editBtn.onclick = async () => {
             const newText = prompt('Edite o presente:', item.text);
             if(newText && newText.trim()!==''){
-              try { await update(ref(db,'presentes/'+id), { text: newText.trim() }); }
-              catch(e){ console.error(e); }
+              await update(ref(db,'presentes/'+id), { text: newText.trim() });
             }
           };
           actions.appendChild(editBtn);
 
-          const delBtn = document.createElement('button');
-          delBtn.className='ghost';
-          delBtn.textContent='Excluir (admin)';
-          delBtn.onclick = async()=>{ try { await remove(ref(db,'presentes/'+id)); } catch(e){console.error(e);} };
-          actions.appendChild(delBtn);
+          const delBtnAdmin = document.createElement('button');
+          delBtnAdmin.className='ghost';
+          delBtnAdmin.textContent='Excluir (admin)';
+          delBtnAdmin.onclick = async()=>{ try { await remove(ref(db,'presentes/'+id)); } catch(e){console.error(e);} };
+          actions.appendChild(delBtnAdmin);
         }
 
         li.appendChild(actions);
