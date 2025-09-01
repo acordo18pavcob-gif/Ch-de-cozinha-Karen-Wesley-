@@ -6,60 +6,29 @@
   <title>Chá de Cozinha — Lista de Presentes</title>
   <style>
     :root {
-      --bg: #ffeef8;       /* fundo rosa bebê */
-      --card: #ffffff;     /* card branco */
-      --card-border: #ffcce7; /* borda rosa clara */
-      --text: #333;        /* texto padrão */
-      --muted: #666;       /* texto secundário */
-      --line: #ffcce7;     /* linha e bordas suaves */
-      --primary: #ff77a9;  /* botão rosa médio */
+      --bg: #ffeef8;
+      --card: #ffffff;
+      --card-border: #ffcce7;
+      --text: #333;
+      --muted: #666;
+      --line: #ffcce7;
+      --primary: #ff77a9;
     }
-
     * { box-sizing: border-box; }
     body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); }
     .wrap { max-width: 720px; margin: 0 auto; padding: 24px; }
-
-    .card {
-      background: var(--card);
-      border:1px solid var(--card-border);
-      border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 6px 20px rgba(255,192,203,0.2);
-    }
-
+    .card { background: var(--card); border:1px solid var(--card-border); border-radius: 16px; padding: 20px; box-shadow: 0 6px 20px rgba(255,192,203,0.2); }
     h1 { font-size: 28px; margin: 0 0 8px; color: #d6336c; text-align:center; }
     p.desc { color: #d6336c; margin:0 0 16px; text-align:center; font-size:16px; }
-
     .row { display:flex; gap:8px; margin: 12px 0; }
     input[type="text"] { flex:1; padding:12px 14px; border:1px solid var(--line); border-radius: 12px; font-size:16px; }
     button { padding: 12px 14px; border:0; border-radius:12px; font-weight:600; cursor:pointer; }
     button.primary { background: var(--primary); color:#fff; }
     button.ghost { background:#fff; border:1px solid var(--line); color: var(--text); }
-
     .list { list-style:none; padding:0; margin: 16px 0 0; }
-    .item {
-      display:flex;
-      align-items:center;
-      justify-content: space-between;
-      gap:8px;
-      border:1px solid var(--line);
-      background:#fff;
-      border-radius:12px;
-      padding:12px 14px;
-      margin-bottom:8px;
-    }
-
-    .gift {
-      font-size:16px;
-      transition: all 0.4s ease; /* transição suave */
-    }
-
-    .item.reserved .gift {
-      text-decoration: line-through;
-      color:#d6336c;
-      opacity:0.7;
-    }
-
+    .item { display:flex; align-items:center; justify-content: space-between; gap:8px; border:1px solid var(--line); background:#fff; border-radius:12px; padding:12px 14px; margin-bottom:8px; }
+    .gift { font-size:16px; transition: all 0.4s ease; }
+    .item.reserved .gift { text-decoration: line-through; color:#d6336c; opacity:0.7; }
     .meta { color: var(--muted); font-size:12px; }
     .actions { display:flex; gap:6px; }
     .admin-bar { display:flex; gap:8px; align-items:center; justify-content: space-between; margin-top: 16px; }
@@ -115,7 +84,7 @@
 
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+    import { getDatabase, ref, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
@@ -192,7 +161,7 @@
       const entries = Object.entries(data).sort((a,b)=> (a[1].createdAt||0)-(b[1].createdAt||0));
       listEl.innerHTML='';
       for(const [id,item] of entries){
-        const li = document.createElement('li'); li.className='item reserved'; // já riscado
+        const li = document.createElement('li'); li.className='item reserved';
         const txt = document.createElement('div'); 
         txt.className='gift';
         txt.textContent = item.text;
@@ -200,6 +169,7 @@
 
         const actions = document.createElement('div'); actions.className='actions';
 
+        // Botão excluir do próprio convidado
         if(currentUser && currentUser.uid === item.owner){
           const delBtn = document.createElement('button');
           delBtn.className='ghost';
@@ -208,18 +178,23 @@
           actions.appendChild(delBtn);
         }
 
+        // Botões admin: editar e excluir
         if(isAdmin){
+          // Editar
+          const editBtn = document.createElement('button');
+          editBtn.className='ghost';
+          editBtn.textContent='Editar (admin)';
+          editBtn.onclick = async () => {
+            const newText = prompt('Edite o presente:', item.text);
+            if(newText && newText.trim()!==''){
+              try { await update(ref(db,'presentes/'+id), { text: newText.trim() }); }
+              catch(e){ console.error(e); }
+            }
+          };
+          actions.appendChild(editBtn);
+
+          // Excluir
           const delBtn = document.createElement('button');
           delBtn.className='ghost';
           delBtn.textContent='Excluir (admin)';
-          delBtn.onclick = async()=>{ try { await remove(ref(db,'presentes/'+id)); } catch(e){console.error(e);} };
-          actions.appendChild(delBtn);
-        }
-
-        li.appendChild(actions);
-        listEl.appendChild(li);
-      }
-    });
-  </script>
-</body>
-</html>
+          delBtn.onclick = async()=>{ try { await remove(ref(db,'presentes/'+id));
