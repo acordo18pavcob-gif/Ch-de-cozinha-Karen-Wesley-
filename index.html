@@ -1,156 +1,197 @@
-<!DOCTYPE html>
-<html lang="pt-br">
+<!doctype html>
+<html lang="pt-BR">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>💗 Chá de Cozinha Karen & Wesley 💗</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://esm.sh/@supabase/supabase-js@2.45.4"></script>
-<style>
-:root { --brand: #ff5fa2; }
-html { font-family: "Poppins", system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif; }
-.card { border-radius: 1rem; box-shadow: 0 10px 25px rgba(0,0,0,.08); }
-.btn { border-radius: 9999px; padding: .65rem 1rem; font-weight: 600; cursor: pointer; }
-.btn-primary { background: var(--brand); color: white; }
-.btn-primary:hover { filter: brightness(.95); }
-.chip { border-radius: 9999px; font-size: .75rem; padding: .25rem .6rem; background: #f1f5f9; }
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chá de Cozinha — Lista de Presentes</title>
+  <style>
+    :root { --bg:#fff; --card:#f8f8fb; --text:#111; --muted:#666; --line:#e9e9ef; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); }
+    .wrap { max-width: 720px; margin: 0 auto; padding: 24px; }
+    .card { background: var(--card); border:1px solid var(--line); border-radius: 16px; padding: 20px; box-shadow: 0 4px 14px rgba(0,0,0,.04); }
+    h1 { font-size: 24px; margin: 0 0 8px; }
+    p.desc { color: var(--muted); margin:0 0 16px; }
+    .row { display:flex; gap:8px; margin: 12px 0; }
+    input[type="text"] { flex:1; padding:12px 14px; border:1px solid var(--line); border-radius: 12px; font-size:16px; }
+    button { padding: 12px 14px; border:0; border-radius:12px; font-weight:600; cursor:pointer; }
+    button.primary { background:#111; color:#fff; }
+    button.ghost { background:#fff; border:1px solid var(--line); }
+    .list { list-style:none; padding:0; margin: 16px 0 0; }
+    .item { display:flex; align-items:center; justify-content: space-between; gap:8px; border:1px solid var(--line); background:#fff; border-radius:12px; padding:12px 14px; margin-bottom:8px; }
+    .gift { text-decoration: line-through; font-size:16px; }
+    .meta { color: var(--muted); font-size:12px; }
+    .actions { display:flex; gap:6px; }
+    .admin-bar { display:flex; gap:8px; align-items:center; justify-content: space-between; margin-top: 16px; }
+    .hide { display:none; }
+    .footer { color: var(--muted); font-size:12px; margin-top:16px; text-align:center; }
+  </style>
 </head>
-<body class="bg-gradient-to-b from-rose-50 to-white min-h-screen">
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Lista de Presentes — Chá de Cozinha</h1>
+      <p class="desc">Digite o presente que você vai dar e confirme. Ele aparecerá para todos <strong>riscado</strong> (reservado). Se mudar de ideia, você pode <strong>excluir seu presente</strong> depois.</p>
 
-<header class="max-w-5xl mx-auto px-4 pt-10 pb-6 text-center">
-  <div class="inline-flex items-center gap-2 px-4 py-2 bg-white/70 backdrop-blur card">
-    <span class="chip">Evento</span>
-    <span class="text-sm">Chá de cozinha Karen & Wesley</span>
-  </div>
-  <h1 class="text-3xl md:text-5xl font-bold mt-4">💗 Chá de Cozinha <span class="text-[var(--brand)]">Karen & Wesley</span> 💗</h1>
-  <p class="text-slate-600 mt-3 max-w-2xl mx-auto">Escolha um presente abaixo ou sugira um novo. Todos conseguem ver em tempo real o que já foi escolhido. 🫶</p>
-</header>
+      <div class="row">
+        <input id="giftInput" type="text" maxlength="100" placeholder="Ex.: Jogo de copos" />
+        <button id="addBtn" class="primary">Confirmar presente</button>
+      </div>
 
-<main class="max-w-6xl mx-auto px-4 pb-16">
-  <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 mb-6">
-    <input id="search" type="search" placeholder="Buscar itens…" class="w-full md:w-80 bg-white card px-4 py-3 outline-none">
-    <div class="flex items-center gap-2">
-      <span class="chip" id="totalCount">0 itens</span>
-      <span class="chip" id="reservedCount">0 reservados</span>
-      <button id="refreshBtn" class="btn">Atualizar</button>
+      <ul id="list" class="list"></ul>
+
+      <div class="admin-bar">
+        <div>
+          <button id="adminToggle" class="ghost">Entrar como admin</button>
+          <span id="adminBadge" class="meta hide">Admin conectado</span>
+        </div>
+        <div id="adminForm" class="hide">
+          <input id="adminEmail" type="email" placeholder="Seu e‑mail" style="padding:8px;border:1px solid var(--line);border-radius:10px;" />
+          <input id="adminPass" type="password" placeholder="Sua senha" style="padding:8px;border:1px solid var(--line);border-radius:10px;" />
+          <button id="adminLogin" class="primary">Login</button>
+          <button id="adminCancel" class="ghost">Cancelar</button>
+        </div>
+        <div id="adminControls" class="hide">
+          <button id="adminLogout" class="ghost">Sair do admin</button>
+        </div>
+      </div>
+
+      <p class="footer">Tudo é anônimo para os convidados. Apenas o admin pode editar/apagar qualquer item.</p>
     </div>
   </div>
 
-  <div id="grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+  <script type="module">
+    // ===== [1] COLE SUAS CHAVES DO FIREBASE =====
+    // ===== [1] CONFIGURAÇÃO DO FIREBASE =====
+const firebaseConfig = {
+  apiKey: "AIzaSyAwtJ2viqesV1lFD9pizw-N45UOh9IWpyg",
+  authDomain: "cha-de-cozinha-karen.firebaseapp.com",
+  databaseURL: "https://cha-de-cozinha-karen-default-rtdb.firebaseio.com",
+  projectId: "cha-de-cozinha-karen",
+  storageBucket: "cha-de-cozinha-karen.firebasestorage.app",
+  messagingSenderId: "62105968231",
+  appId: "1:62105968231:web:af3ba8b89a181608f2fec2"
+};
 
-  <div class="max-w-xl mx-auto mt-10 bg-white p-6 card">
-    <h2 class="text-xl font-semibold mb-4">Sugira um presente</h2>
-    <div class="grid gap-3">
-      <input id="suggestTitle" placeholder="Nome do presente" class="w-full bg-slate-50 px-3 py-2 rounded-xl outline-none">
-      <input id="suggestLink" placeholder="Link da loja (opcional)" class="w-full bg-slate-50 px-3 py-2 rounded-xl outline-none">
-      <input id="suggestImage" placeholder="Link da imagem (opcional)" class="w-full bg-slate-50 px-3 py-2 rounded-xl outline-none">
-      <button id="submitSuggestion" class="btn btn-primary">Enviar sugestão</button>
-    </div>
-  </div>
-</main>
+// ===== [2] DEFINA O E-MAIL DO ADMIN =====
+const ADMIN_EMAIL = "karen_garcia1999@outlook.com";
 
-<footer class="text-center text-sm text-slate-500 mt-12">
-  Feito com 💗 | Atualizações em tempo real via Supabase
-</footer>
+// ===== [3] IMPORTS DO FIREBASE =====
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-<script>
-// ======== COLE SUAS CHAVES DO SUPABASE AQUI ========
-const SUPABASE_URL = "https://abcd1234.supabase.co"; // coloque aqui a URL do seu projeto
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."; // coloque aqui a anon key
-const { createClient } = window.Supabase;
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// ===== [4] INICIALIZAÇÃO =====
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
 
+// ===== [5] ELEMENTOS DO HTML =====
+const giftInput = document.getElementById('giftInput');
+const addBtn = document.getElementById('addBtn');
+const listEl = document.getElementById('list');
 
-// ======== ELEMENTOS ========
-const grid = document.getElementById('grid');
-const search = document.getElementById('search');
-const totalCount = document.getElementById('totalCount');
-const reservedCount = document.getElementById('reservedCount');
-const refreshBtn = document.getElementById('refreshBtn');
+const adminToggle = document.getElementById('adminToggle');
+const adminForm = document.getElementById('adminForm');
+const adminEmail = document.getElementById('adminEmail');
+const adminPass = document.getElementById('adminPass');
+const adminLogin = document.getElementById('adminLogin');
+const adminCancel = document.getElementById('adminCancel');
+const adminControls = document.getElementById('adminControls');
+const adminLogout = document.getElementById('adminLogout');
+const adminBadge = document.getElementById('adminBadge');
 
-let gifts = [];
+let currentUser = null;
+let isAdmin = false;
 
-// ======== FUNÇÃO PARA PEGAR PRESENTES ========
-async function fetchGifts() {
-  const { data } = await supabase.from('gifts').select('*').order('created_at', { ascending: true });
-  gifts = data || [];
-  render(gifts);
-}
+// ===== [6] LOGIN ANÔNIMO =====
+signInAnonymously(auth).catch(console.error);
 
-// ======== FUNÇÃO PARA CRIAR CARTÕES ========
-function cardFromGift(gift) {
-  const card = document.createElement('div');
-  card.className = 'card bg-white overflow-hidden flex flex-col';
-
-  const img = document.createElement('img');
-  img.src = gift.image_url || 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1200&q=80&auto=format&fit=crop';
-  img.className = 'w-full h-48 object-cover';
-
-  const title = document.createElement('h3');
-  title.textContent = gift.title;
-  title.className = 'font-semibold p-3';
-
-  const chip = document.createElement('span');
-  chip.className = 'chip p-3';
-  chip.textContent = gift.reserved_by ? `Reservado por ${gift.reserved_by}` : 'Disponível';
-
-  const btn = document.createElement('button');
-  btn.textContent = gift.reserved_by ? 'Indisponível' : 'Reservar';
-  btn.className = 'btn btn-primary m-3';
-  btn.disabled = !!gift.reserved_by;
-  if(!gift.reserved_by) btn.addEventListener('click', () => reserveGift(gift));
-
-  card.appendChild(img);
-  card.appendChild(title);
-  card.appendChild(chip);
-  card.appendChild(btn);
-  return card;
-}
-
-// ======== FUNÇÃO DE RENDER ========
-function render(list) {
-  grid.innerHTML = '';
-  list.forEach(g => grid.appendChild(cardFromGift(g)));
-  totalCount.textContent = `${gifts.length} itens`;
-  reservedCount.textContent = `${gifts.filter(g => g.reserved_by).length} reservados`;
-}
-
-// ======== EVENTOS ========
-refreshBtn.addEventListener('click', fetchGifts);
-search.addEventListener('input', () => render(gifts.filter(g => (g.title + ' ' + (g.description||'')).toLowerCase().includes(search.value.toLowerCase()))));
-
-// ======== FUNÇÃO PARA RESERVAR ========
-async function reserveGift(gift) {
-  const name = prompt('Digite seu nome para reservar este presente:');
-  if(!name) return;
-  await supabase.from('gifts')
-    .update({reserved_by: name, reserved_at: new Date().toISOString()})
-    .eq('id', gift.id)
-    .is('reserved_by', null);
-  fetchGifts();
-}
-
-// ======== SUGESTÕES DE PRESENTE ========
-const suggestTitle = document.getElementById('suggestTitle');
-const suggestLink = document.getElementById('suggestLink');
-const suggestImage = document.getElementById('suggestImage');
-const submitSuggestion = document.getElementById('submitSuggestion');
-
-submitSuggestion.addEventListener('click', async () => {
-  const title = suggestTitle.value.trim();
-  if(!title) return alert('Digite o nome do presente');
-  await supabase.from('gifts')
-    .insert([{ title, store_url: suggestLink.value.trim() || null, image_url: suggestImage.value.trim() || null }]);
-  suggestTitle.value = '';
-  suggestLink.value = '';
-  suggestImage.value = '';
-  fetchGifts();
+onAuthStateChanged(auth, (user) => {
+  currentUser = user;
+  isAdmin = !!(user && user.email === ADMIN_EMAIL);
+  refreshAdminUI();
 });
 
-// ======== INICIALIZAÇÃO ========
-fetchGifts();
-</script>
+// ===== [7] FUNÇÃO PARA ATUALIZAR UI DO ADMIN =====
+function refreshAdminUI(){
+  if (isAdmin) {
+    adminBadge.classList.remove('hide');
+    adminControls.classList.remove('hide');
+    adminForm.classList.add('hide');
+    adminToggle.textContent = 'Admin conectado';
+    adminToggle.disabled = true;
+  } else {
+    adminBadge.classList.add('hide');
+    adminControls.classList.add('hide');
+    adminToggle.textContent = 'Entrar como admin';
+    adminToggle.disabled = false;
+  }
+}
 
+
+    adminToggle.addEventListener('click', () => { adminForm.classList.toggle('hide'); });
+    adminCancel.addEventListener('click', () => { adminForm.classList.add('hide'); adminEmail.value=''; adminPass.value=''; });
+
+    adminLogin.addEventListener('click', async () => {
+      const email = adminEmail.value.trim();
+      const pass = adminPass.value.trim();
+      if (!email || !pass) return alert('Preencha e-mail e senha.');
+      try {
+        await signInWithEmailAndPassword(auth, email, pass);
+        isAdmin = (auth.currentUser?.email === ADMIN_EMAIL);
+        if (!isAdmin) alert('Este usuário não é admin desta lista.');
+        adminForm.classList.add('hide');
+        refreshAdminUI();
+      } catch(e){ alert('Falha no login: '+(e?.message||e)); }
+    });
+
+    adminLogout.addEventListener('click', async () => { try { await signOut(auth); } catch(e){ alert('Erro ao sair'); } });
+
+    addBtn.addEventListener('click', async () => {
+      const text = giftInput.value.trim();
+      if (!text) return alert('Digite o presente.');
+      if (!currentUser) return alert('Conectando... tente novamente.');
+      try { await push(ref(db,'presentes'), { text, owner: currentUser.uid, createdAt: Date.now() }); giftInput.value=''; }
+      catch(e){ alert('Não foi possível adicionar.'); console.error(e); }
+    });
+
+    // Atualiza a lista em tempo real
+    onValue(ref(db,'presentes'), (snap)=>{
+      const data = snap.val()||{};
+      const entries = Object.entries(data).sort((a,b)=> (a[1].createdAt||0)-(b[1].createdAt||0));
+      listEl.innerHTML='';
+      for(const [id,item] of entries){
+        const li = document.createElement('li'); li.className='item';
+        const txt = document.createElement('div'); 
+        txt.className='gift'; // garante riscado
+        txt.textContent = item.text;
+        li.appendChild(txt);
+
+        const actions = document.createElement('div'); actions.className='actions';
+
+        // Convidado só pode excluir o próprio presente
+        if(currentUser && currentUser.uid === item.owner){
+          const delBtn = document.createElement('button');
+          delBtn.className='ghost';
+          delBtn.textContent='Excluir';
+          delBtn.onclick = async()=>{ try { await remove(ref(db,'presentes/'+id)); } catch(e){console.error(e);} };
+          actions.appendChild(delBtn);
+        }
+
+        // Admin pode excluir qualquer presente
+        if(isAdmin){
+          const delBtn = document.createElement('button');
+          delBtn.className='ghost';
+          delBtn.textContent='Excluir (admin)';
+          delBtn.onclick = async()=>{ try { await remove(ref(db,'presentes/'+id)); } catch(e){console.error(e);} };
+          actions.appendChild(delBtn);
+        }
+
+        li.appendChild(actions);
+        listEl.appendChild(li);
+      }
+    });
+  </script>
 </body>
 </html>
